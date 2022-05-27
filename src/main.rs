@@ -3,8 +3,7 @@ use clli::{Dictionary, Word};
 use std::{fs::File, io::{prelude::*, BufReader}, path::PathBuf};
 use serde::{Serialize, Deserialize};
 use rand::Rng;
-use clap::{ Parser, Subcommand};
-
+use clap::{ Parser, Subcommand, Args};
 
 const FILE_PATH: &str = "./examples/storage/turk.json";
 
@@ -14,7 +13,18 @@ const FILE_PATH: &str = "./examples/storage/turk.json";
 struct Cli {
     #[clap(subcommand)]
     command: Commands,
+    // #[clap(Args)]
+    #[clap(short, long)]
+    /// Sozluk dictionary file path.
+    #[clap(default_value = "./examples/storage/turk.json")]
+    file: String,
 }
+
+// #[derive(Debug, Args)]
+// struct Arg {
+    
+// }
+
 
 #[derive(Debug, Subcommand)]
 enum Commands {
@@ -36,26 +46,21 @@ enum Commands {
 
     /// Get the count of words in the dictionary 
     Count,
-
     /// Get the all words from the dictionaryy
     GetAllWords,
-
-    /// Translate english -> turkish
-    Etranslate{
-        #[clap(required = true)]
-        english: String,
-    },
-
     /// Translate turkish -> english 
-    Ttranslate{
+    Translate{
         #[clap(required = true)]
         native: String,
+        #[clap(short)]
+        /// -r flag = reverse translation.
+        reverse: bool,
     },    
 }
 
 fn main() {
     let args = Cli::parse();
-    let mut sozluk = sozluk_init();
+    let mut sozluk = sozluk_init(&args.file);
 
     match args.command {
         Commands::Random{ count}  => {
@@ -67,9 +72,7 @@ fn main() {
             }
         Commands::Add { native , english } => {
             println!("Pushing to {} :: {}", native , english);
-            let dummy_cat: Vec<String> = vec![];
-            let dummy_examples: Vec<String> = vec![];
-            match sozluk.add_word(native, english, dummy_cat, dummy_examples){
+            match sozluk.add_word(native, english, vec![], vec![]){
                 Ok(()) => println!("New record added"),
                 Err(err) => println!("Error {}", err),     
             } 
@@ -77,26 +80,26 @@ fn main() {
         Commands::Count => {
             println!("{} records in dictionary", sozluk.count());
         }
-        Commands::Etranslate {english} => {
-            if let Some(word) = sozluk.get_word(&english) {
-                println!("{} = translate = {} ", word.native, &english);    
-            } else {
-                println!("Translate for {} not found",&english);
-            }
-        }    
-        Commands::Ttranslate {native} => {
-            if let Some(word) = sozluk.get_word_en(&native) {
-                println!("{} = translate = {} ", word.english, &native,);    
-            } else {
-                println!("Translate for {} not found", &native);
-            }
+        Commands::Translate {native, reverse} => {
+            if reverse == false {
+                    if let Some(word) = sozluk.get_word_en(&native) {
+                        println!("{} = translate = {} ", word.english, &native,);    
+                    } else {
+                        println!("Translation for {} not found", &native);
+                    }}
+            else  {
+                    if let Some(word) = sozluk.get_word(&native) {
+                        println!("{} = translate = {} ", word.english, &native,);    
+                    } else {
+                        println!("Translation for {} not found", &native);
+                    }
+            }    
         }
         Commands::GetAllWords =>{
-            let mut msg = String::new();
             for rec in sozluk.get_all().iter(){
-                let _ = &msg.push_str(format!("Turkish: {}, transtlate: {}, examples: {} \n", rec.native, &rec.english, &rec.examples.join("; ")).as_str());
+                println!("Turkish: {}, transtlate: {}, examples: {} \n", rec.native, &rec.english, &rec.examples.join("; "));
             }
-            println!("sozluk {}",&msg);
+            
         }
      }    
 }
@@ -104,8 +107,8 @@ fn main() {
 
 
 /// Try create sozluk from the file or (if can`t) create new sozluk instance
-fn sozluk_init() -> Sozluk {
-    let backup_path: PathBuf = FILE_PATH.into();
+fn sozluk_init(FilePath: &str) -> Sozluk {
+    let backup_path: PathBuf = FilePath.into();
     let sozluk = match Sozluk::try_from_file(backup_path) {
         Ok(sozluk) => sozluk,
         Err(_) => Sozluk::new(),
