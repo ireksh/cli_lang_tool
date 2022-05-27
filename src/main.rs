@@ -17,7 +17,7 @@ struct Cli {
     #[clap(short, long)]
     /// Sozluk dictionary file path.
     #[clap(default_value = "./examples/storage/turk.json")]
-    file: String,
+    path: String,
 }
 
 // #[derive(Debug, Args)]
@@ -60,7 +60,7 @@ enum Commands {
 
 fn main() {
     let args = Cli::parse();
-    let mut sozluk = sozluk_init(&args.file);
+    let mut sozluk = sozluk_init(&args.path);
 
     match args.command {
         Commands::Random{ count}  => {
@@ -107,8 +107,8 @@ fn main() {
 
 
 /// Try create sozluk from the file or (if can`t) create new sozluk instance
-fn sozluk_init(FilePath: &str) -> Sozluk {
-    let backup_path: PathBuf = FilePath.into();
+fn sozluk_init(file_path: &str) -> Sozluk {
+    let backup_path: PathBuf = file_path.into();
     let sozluk = match Sozluk::try_from_file(backup_path) {
         Ok(sozluk) => sozluk,
         Err(_) => Sozluk::new(),
