@@ -1,16 +1,104 @@
-use anyhow::{ Result};
-use cli_lang_tool::{Dictionary, Word};
+use anyhow::{Result};
+use clli::{Dictionary, Word};
 use std::{fs::File, io::{prelude::*, BufReader}, path::PathBuf};
 use serde::{Serialize, Deserialize};
 use rand::Rng;
-use structopt::StructOpt;
+use clap::{ Parser, Subcommand};
 
 
 const FILE_PATH: &str = "./examples/storage/turk.json";
 
+#[derive(Debug, Parser)]
+#[clap(name = "clli")]
+#[clap(about = "turkish lang tool", long_about = None)]
+struct Cli {
+    #[clap(subcommand)]
+    command: Commands,
+}
+
+#[derive(Debug, Subcommand)]
+enum Commands {
+    // #[clap(arg_required_else_help = true)]
+    ///Get the random word from the sozluk
+    Random{
+        /// count - how many random words
+        #[clap(default_value_t = 1)]
+        count: u8,
+    },
+    #[clap(arg_required_else_help = true)]
+    /// Adds records to the dictionary
+    Add
+        {
+        #[clap(required = true)]
+        native: String,
+        english: String,
+        },
+
+    /// Get the count of words in the dictionary 
+    Count,
+
+    /// Get the all words from the dictionaryy
+    GetAllWords,
+
+    /// Translate english -> turkish
+    Etranslate{
+        #[clap(required = true)]
+        english: String,
+    },
+
+    /// Translate turkish -> english 
+    Ttranslate{
+        #[clap(required = true)]
+        native: String,
+    },    
+}
 
 fn main() {
-    println!("Hello, sozluk");
+    let args = Cli::parse();
+    let mut sozluk = sozluk_init();
+
+    match args.command {
+        Commands::Random{ count}  => {
+            for _ in 0..count {
+                if let Some(word) = sozluk.get_rand_word() {
+                    println!("The random word : {}. translate:{}", &word.native, &word.english );
+                    }
+                }
+            }
+        Commands::Add { native , english } => {
+            println!("Pushing to {} :: {}", native , english);
+            let dummy_cat: Vec<String> = vec![];
+            let dummy_examples: Vec<String> = vec![];
+            match sozluk.add_word(native, english, dummy_cat, dummy_examples){
+                Ok(()) => println!("New record added"),
+                Err(err) => println!("Error {}", err),     
+            } 
+        }
+        Commands::Count => {
+            println!("{} records in dictionary", sozluk.count());
+        }
+        Commands::Etranslate {english} => {
+            if let Some(word) = sozluk.get_word(&english) {
+                println!("{} = translate = {} ", word.native, &english);    
+            } else {
+                println!("Translate for {} not found",&english);
+            }
+        }    
+        Commands::Ttranslate {native} => {
+            if let Some(word) = sozluk.get_word_en(&native) {
+                println!("{} = translate = {} ", word.english, &native,);    
+            } else {
+                println!("Translate for {} not found", &native);
+            }
+        }
+        Commands::GetAllWords =>{
+            let mut msg = String::new();
+            for rec in sozluk.get_all().iter(){
+                let _ = &msg.push_str(format!("Turkish: {}, transtlate: {}, examples: {} \n", rec.native, &rec.english, &rec.examples.join("; ")).as_str());
+            }
+            println!("sozluk {}",&msg);
+        }
+     }    
 }
 
 
@@ -26,7 +114,7 @@ fn sozluk_init() -> Sozluk {
 }
 
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Deserialize,)]
 
 pub struct Sozluk {
     records: Vec<Word>
@@ -83,8 +171,8 @@ impl Dictionary for Sozluk {
         Ok(())
     }
 
-    fn get_word(&self, word: &String) -> Option<&Word> {
-        self.records.iter().find(|w| &w.native == word)
+    fn get_word(&self, native: &String) -> Option<&Word> {
+        self.records.iter().find(|w| &w.native == native)
     }
 
     fn get_word_en(&self, en_word: &String) -> Option<&Word> {
@@ -95,3 +183,6 @@ impl Dictionary for Sozluk {
         &self.records
     }
 }
+
+// #[cfg(test)]
+
