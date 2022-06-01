@@ -4,7 +4,7 @@
 /// so all of the data pieces included into the dictionary can be converted through
 /// the main (canonical) language - English.
 use anyhow::Result;
-use serde::{Serialize, Deserialize};
+use serde::{Deserialize, Serialize};
 
 /// A Dictionary record representation.
 /// Consists of two main strings:
@@ -17,7 +17,6 @@ use serde::{Serialize, Deserialize};
 pub struct Word {
     pub native: String,
     pub english: String,
-
     pub categories: Vec<String>,
     pub examples: Vec<String>,
 }

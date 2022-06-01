@@ -17,19 +17,19 @@ For parse and convert Turkish words into English.
 turkish lang tool
 
 USAGE:
-    clli <SUBCOMMAND>
+    clli [OPTIONS] <SUBCOMMAND>
 
 OPTIONS:
-    -h, --help    Print help information
+    -h, --help           Print help information
+    -p, --path <PATH>    Sozluk dictionary file path [default: ./examples/storage/turk.json]
 
 SUBCOMMANDS:
     add              Adds records to the dictionary
     count            Get the count of words in the dictionary
-    etranslate       Translate english -> turkish
     get-all-words    Get the all words from the dictionaryy
     help             Print this message or the help of the given subcommand(s)
     random           Get the random word from the sozluk
-    ttranslate       Translate turkish -> english
+    translate        Translate any -> english + english-> any 
 ```
 
 
